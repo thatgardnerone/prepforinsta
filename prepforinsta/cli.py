@@ -38,9 +38,14 @@ def find_images(input_path: Path) -> List[Path]:
 @click.argument('output_path', type=click.Path(), required=False)
 @click.option(
     '--quality',
-    default=90,
+    default=100,
     type=click.IntRange(60, 100),
     help='Starting JPEG quality (60-100). Will be reduced if needed to meet 8MB limit.'
+)
+@click.option(
+    '--no-sharpen',
+    is_flag=True,
+    help='Skip sharpening (useful if images are pre-sharpened in Lightroom).'
 )
 @click.option(
     '--dry-run',
@@ -53,7 +58,7 @@ def find_images(input_path: Path) -> List[Path]:
     is_flag=True,
     help='Show detailed processing information.'
 )
-def main(input_path: str, output_path: str, quality: int, dry_run: bool, verbose: bool):
+def main(input_path: str, output_path: str, quality: int, no_sharpen: bool, dry_run: bool, verbose: bool):
     """
     Prepare images for Instagram publishing.
 
@@ -99,7 +104,7 @@ def main(input_path: str, output_path: str, quality: int, dry_run: bool, verbose
     output_path.mkdir(parents=True, exist_ok=True)
 
     # Process images
-    processor = ImageProcessor(start_quality=quality)
+    processor = ImageProcessor(start_quality=quality, no_sharpen=no_sharpen)
     success_count = 0
     error_count = 0
 

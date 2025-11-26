@@ -18,14 +18,15 @@ class ImageProcessor:
     MAX_FILE_SIZE_MB = 8
     MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 
-    # Sharpening parameters for screen viewing
-    SHARPEN_RADIUS = 1.5
-    SHARPEN_PERCENT = 120
-    SHARPEN_THRESHOLD = 3
+    # Sharpening parameters for screen viewing (subtle, professional levels)
+    SHARPEN_RADIUS = 0.8
+    SHARPEN_PERCENT = 50
+    SHARPEN_THRESHOLD = 2
 
-    def __init__(self, start_quality: int = 90):
-        """Initialize processor with starting JPEG quality."""
+    def __init__(self, start_quality: int = 100, no_sharpen: bool = False):
+        """Initialize processor with starting JPEG quality and sharpening option."""
         self.start_quality = start_quality
+        self.no_sharpen = no_sharpen
 
     @staticmethod
     def _get_orientation(img: Image.Image) -> str:
@@ -221,8 +222,9 @@ class ImageProcessor:
         # Convert to sRGB
         img = self._convert_to_srgb(img)
 
-        # Apply screen sharpening
-        img = self._apply_screen_sharpening(img)
+        # Apply screen sharpening (unless disabled)
+        if not self.no_sharpen:
+            img = self._apply_screen_sharpening(img)
 
         # Save with size optimization
         final_quality = self._save_with_size_optimization(img, output_path, exif_bytes)

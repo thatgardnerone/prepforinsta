@@ -10,7 +10,7 @@ Automatically processes images to meet Instagram's optimal specifications:
 - **Landscape images**: Scaled to max 1350px long edge (preserves aspect ratio)
 - **Square images**: Scaled to 1080×1080px
 - **All images**:
-  - Sharpened for screen viewing (compensates for Instagram compression)
+  - Subtle sharpening for screen viewing (can be disabled with `--no-sharpen`)
   - Converted to sRGB color space
   - Saved as progressive JPEG with optimized quality
   - Automatically reduced to stay under 8MB file size limit
@@ -56,7 +56,9 @@ prepforinsta [INPUT_PATH] [OUTPUT_PATH] [OPTIONS]
 
 Options:
   --quality INTEGER RANGE  Starting JPEG quality (60-100). Auto-reduces if
-                          needed to meet 8MB limit. [default: 90]
+                          needed to meet 8MB limit. [default: 100]
+  --no-sharpen            Skip sharpening (useful if images are pre-sharpened
+                          in Lightroom)
   --dry-run               Show what would be processed without processing
   -v, --verbose           Show detailed processing information
   --help                  Show this message and exit
@@ -79,6 +81,11 @@ prepforinsta ~/pictures/vacation -v
 prepforinsta ~/pictures/vacation --quality 95
 ```
 
+**Skip sharpening (for pre-sharpened exports):**
+```bash
+prepforinsta ~/pictures/vacation --no-sharpen
+```
+
 ## Supported Formats
 
 - JPEG (.jpg, .jpeg)
@@ -92,7 +99,7 @@ prepforinsta ~/pictures/vacation --quality 95
    - Landscape: Scale down so longest edge is 1350px
    - Square: Scale to 1080×1080px
 3. **Color correction**: Converts to sRGB (Instagram's standard color space)
-4. **Sharpening**: Applies unsharp mask optimized for screen viewing
+4. **Sharpening**: Applies subtle unsharp mask for screen viewing (skip with `--no-sharpen`)
 5. **EXIF handling**: Strips metadata but preserves GPS and DateTime for Instagram
 6. **Size optimization**: Saves as progressive JPEG, automatically reducing quality if needed to stay under 8MB
 
