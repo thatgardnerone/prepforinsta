@@ -48,6 +48,11 @@ def find_images(input_path: Path) -> List[Path]:
     help='Skip sharpening (useful if images are pre-sharpened in Lightroom).'
 )
 @click.option(
+    '--keep-exif',
+    is_flag=True,
+    help='Preserve GPS and DateTime EXIF data (stripped by default for privacy).'
+)
+@click.option(
     '--dry-run',
     is_flag=True,
     help='Show what would be processed without actually processing.'
@@ -58,7 +63,7 @@ def find_images(input_path: Path) -> List[Path]:
     is_flag=True,
     help='Show detailed processing information.'
 )
-def main(input_path: str, output_path: str, quality: int, no_sharpen: bool, dry_run: bool, verbose: bool):
+def main(input_path: str, output_path: str, quality: int, no_sharpen: bool, keep_exif: bool, dry_run: bool, verbose: bool):
     """
     Prepare images for Instagram publishing.
 
@@ -104,7 +109,7 @@ def main(input_path: str, output_path: str, quality: int, no_sharpen: bool, dry_
     output_path.mkdir(parents=True, exist_ok=True)
 
     # Process images
-    processor = ImageProcessor(start_quality=quality, no_sharpen=no_sharpen)
+    processor = ImageProcessor(start_quality=quality, no_sharpen=no_sharpen, keep_exif=keep_exif)
     success_count = 0
     error_count = 0
 

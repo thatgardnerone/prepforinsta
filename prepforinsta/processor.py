@@ -23,10 +23,11 @@ class ImageProcessor:
     SHARPEN_PERCENT = 50
     SHARPEN_THRESHOLD = 2
 
-    def __init__(self, start_quality: int = 100, no_sharpen: bool = False):
-        """Initialize processor with starting JPEG quality and sharpening option."""
+    def __init__(self, start_quality: int = 100, no_sharpen: bool = False, keep_exif: bool = False):
+        """Initialize processor with options."""
         self.start_quality = start_quality
         self.no_sharpen = no_sharpen
+        self.keep_exif = keep_exif
 
     @staticmethod
     def _get_orientation(img: Image.Image) -> str:
@@ -194,15 +195,16 @@ class ImageProcessor:
         except Exception:
             pass
 
-        # Preserve GPS and DateTime EXIF
+        # Handle EXIF data (strip by default for privacy)
         exif_bytes = None
-        try:
-            exif_dict = piexif.load(input_path.as_posix())
-            filtered_exif = self._preserve_gps_datetime(exif_dict)
-            exif_bytes = piexif.dump(filtered_exif)
-        except Exception:
-            # No EXIF or error reading it
-            pass
+        if self.keep_exif:
+            try:
+                exif_dict = piexif.load(input_path.as_posix())
+                filtered_exif = self._preserve_gps_datetime(exif_dict)
+                exif_bytes = piexif.dump(filtered_exif)
+            except Exception:
+                # No EXIF or error reading it
+                pass
 
         # Determine orientation
         orientation = self._get_orientation(img)

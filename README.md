@@ -14,7 +14,7 @@ Automatically processes images to meet Instagram's optimal specifications:
   - Converted to sRGB color space
   - Saved as progressive JPEG with optimized quality
   - Automatically reduced to stay under 8MB file size limit
-  - EXIF data stripped (preserves GPS location and DateTime for Instagram auto-location)
+  - EXIF data stripped for privacy (use `--keep-exif` to preserve GPS/DateTime)
 
 ## Installation
 
@@ -59,6 +59,8 @@ Options:
                           needed to meet 8MB limit. [default: 100]
   --no-sharpen            Skip sharpening (useful if images are pre-sharpened
                           in Lightroom)
+  --keep-exif             Preserve GPS and DateTime EXIF data (stripped by
+                          default for privacy)
   --dry-run               Show what would be processed without processing
   -v, --verbose           Show detailed processing information
   --help                  Show this message and exit
@@ -86,6 +88,11 @@ prepforinsta ~/pictures/vacation --quality 95
 prepforinsta ~/pictures/vacation --no-sharpen
 ```
 
+**Keep GPS/DateTime for Instagram auto-location:**
+```bash
+prepforinsta ~/pictures/vacation --keep-exif
+```
+
 ## Supported Formats
 
 - JPEG (.jpg, .jpeg)
@@ -100,7 +107,7 @@ prepforinsta ~/pictures/vacation --no-sharpen
    - Square: Scale to 1080×1080px
 3. **Color correction**: Converts to sRGB (Instagram's standard color space)
 4. **Sharpening**: Applies subtle unsharp mask for screen viewing (skip with `--no-sharpen`)
-5. **EXIF handling**: Strips metadata but preserves GPS and DateTime for Instagram
+5. **EXIF handling**: Strips all metadata for privacy (use `--keep-exif` to preserve GPS/DateTime)
 6. **Size optimization**: Saves as progressive JPEG, automatically reducing quality if needed to stay under 8MB
 
 ## Instagram Optimization Tips
