@@ -237,3 +237,145 @@ class ImageProcessor:
             "quality": final_quality,
             "file_size_mb": output_path.stat().st_size / (1024 * 1024)
         }
+
+    def process_image_size_constrained(
+        self,
+        input_path: Path,
+        output_path: Path,
+        max_size_mb: float,
+        verbose: bool = False
+    ) -> dict:
+        """
+        Process image with file size as primary constraint.
+
+        Preserves original aspect ratio and scales down to fit within max_size_mb.
+        Balances quality and resolution for best result.
+        """
+        max_size_bytes = int(max_size_mb * 1024 * 1024)
+
+        # Load image
+        img = Image.open(input_path)
+        original_size = img.size
+
+        # Handle EXIF orientation
+        try:
+            img = Image.exif_transpose(img)
+        except Exception:
+            pass
+
+        # Handle EXIF data (strip by default for privacy)
+        exif_bytes = None
+        if self.keep_exif:
+            try:
+                exif_dict = piexif.load(input_path.as_posix())
+                filtered_exif = self._preserve_gps_datetime(exif_dict)
+                exif_bytes = piexif.dump(filtered_exif)
+            except Exception:
+                pass
+
+        # Convert to sRGB
+        img = self._convert_to_srgb(img)
+
+        # Apply sharpening if enabled
+        if not self.no_sharpen:
+            img = self._apply_screen_sharpening(img)
+
+        # Save with size and scale optimization
+        final_quality, final_img = self._save_with_size_and_scale_optimization(
+            img, output_path, max_size_bytes, exif_bytes
+        )
+
+        return {
+            "original_size": original_size,
+            "final_size": final_img.size,
+            "quality": final_quality,
+            "file_size_mb": output_path.stat().st_size / (1024 * 1024)
+        }
+
+    def _save_with_size_and_scale_optimization(
+        self,
+        img: Image.Image,
+        output_path: Path,
+        max_size_bytes: int,
+        exif_bytes: bytes = None
+    ) -> Tuple[int, Image.Image]:
+        """
+        Save image by balancing quality and scale to fit within size limit.
+
+        Strategy: Scale down minimally, then maximize quality via binary search.
+        Returns (final_quality, final_image).
+        """
+        current_img = img
+
+        def encode_to_buffer(image: Image.Image, q: int) -> io.BytesIO:
+            """Encode image to JPEG buffer at given quality."""
+            buffer = io.BytesIO()
+            save_kwargs = {
+                "format": "JPEG",
+                "quality": q,
+                "optimize": True,
+                "progressive": True,
+            }
+            if exif_bytes:
+                save_kwargs["exif"] = exif_bytes
+            image.save(buffer, **save_kwargs)
+            return buffer
+
+        # Step 1: Scale down if needed (at high quality) to get roughly under limit
+        for _ in range(5):  # Max 5 scaling iterations
+            buffer = encode_to_buffer(current_img, 95)
+            size = buffer.tell()
+
+            if size <= max_size_bytes:
+                break  # Small enough at high quality
+
+            # Calculate scale factor - use 0.98 margin (only 2% buffer)
+            scale_factor = (max_size_bytes / size) ** 0.5 * 0.98
+
+            if scale_factor >= 0.99:
+                # Very close, quality adjustment will handle it
+                break
+
+            # Scale down
+            new_width = max(100, int(current_img.width * scale_factor))
+            new_height = max(100, int(current_img.height * scale_factor))
+            current_img = current_img.resize(
+                (new_width, new_height),
+                Image.Resampling.LANCZOS
+            )
+
+        # Step 2: Binary search for highest quality that fits
+        min_quality = 60
+        max_quality = 100
+        best_quality = min_quality
+        best_buffer = None
+
+        while min_quality <= max_quality:
+            mid_quality = (min_quality + max_quality) // 2
+            buffer = encode_to_buffer(current_img, mid_quality)
+            size = buffer.tell()
+
+            if size <= max_size_bytes:
+                # Fits - try higher quality
+                best_quality = mid_quality
+                best_buffer = buffer
+                min_quality = mid_quality + 1
+            else:
+                # Too large - try lower quality
+                max_quality = mid_quality - 1
+
+        # Save the best result
+        if best_buffer:
+            output_path.write_bytes(best_buffer.getvalue())
+        else:
+            # Fallback: couldn't fit even at min quality, scale more aggressively
+            scale_factor = 0.8
+            current_img = current_img.resize(
+                (int(current_img.width * scale_factor), int(current_img.height * scale_factor)),
+                Image.Resampling.LANCZOS
+            )
+            buffer = encode_to_buffer(current_img, 80)
+            output_path.write_bytes(buffer.getvalue())
+            best_quality = 80
+
+        return best_quality, current_img

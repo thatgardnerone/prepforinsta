@@ -61,6 +61,8 @@ Options:
                           in Lightroom)
   --keep-exif             Preserve GPS and DateTime EXIF data (stripped by
                           default for privacy)
+  --max-size FLOAT        Target max file size in MB. Enables size-constrained
+                          mode (no cropping, preserves aspect ratio)
   --dry-run               Show what would be processed without processing
   -v, --verbose           Show detailed processing information
   --help                  Show this message and exit
@@ -92,6 +94,21 @@ prepforinsta ~/pictures/vacation --no-sharpen
 ```bash
 prepforinsta ~/pictures/vacation --keep-exif
 ```
+
+**Size-constrained mode for PurplePort (6MB limit):**
+```bash
+prepforinsta ~/pictures/vacation --max-size 6
+```
+
+## Size-Constrained Mode
+
+When using `--max-size`, the tool operates in size-constrained mode:
+
+- **No cropping** - preserves original aspect ratio
+- **No fixed dimensions** - scales down to fit within size limit
+- **Balances quality + resolution** - reduces both for optimal result
+
+This is useful for platforms like PurplePort that have file size limits but don't require specific aspect ratios.
 
 ## Supported Formats
 

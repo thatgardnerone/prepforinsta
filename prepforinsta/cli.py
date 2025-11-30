@@ -53,6 +53,12 @@ def find_images(input_path: Path) -> List[Path]:
     help='Preserve GPS and DateTime EXIF data (stripped by default for privacy).'
 )
 @click.option(
+    '--max-size',
+    type=float,
+    default=None,
+    help='Target max file size in MB. Enables size-constrained mode (no cropping, preserves aspect ratio).'
+)
+@click.option(
     '--dry-run',
     is_flag=True,
     help='Show what would be processed without actually processing.'
@@ -63,7 +69,7 @@ def find_images(input_path: Path) -> List[Path]:
     is_flag=True,
     help='Show detailed processing information.'
 )
-def main(input_path: str, output_path: str, quality: int, no_sharpen: bool, keep_exif: bool, dry_run: bool, verbose: bool):
+def main(input_path: str, output_path: str, quality: int, no_sharpen: bool, keep_exif: bool, max_size: float, dry_run: bool, verbose: bool):
     """
     Prepare images for Instagram publishing.
 
@@ -97,6 +103,10 @@ def main(input_path: str, output_path: str, quality: int, no_sharpen: bool, keep
         sys.exit(1)
 
     click.echo(f"Found {len(images)} image(s) to process")
+    if max_size:
+        click.echo(f"Mode: Size-constrained ({max_size}MB limit, no cropping)")
+    else:
+        click.echo("Mode: Instagram optimization (4:5 crop for portraits)")
     click.echo(f"Output directory: {output_path}")
 
     if dry_run:
@@ -123,17 +133,31 @@ def main(input_path: str, output_path: str, quality: int, no_sharpen: bool, keep
             output_file = output_path / f"{img_path.stem}.jpg"
 
             try:
-                result = processor.process_image(img_path, output_file, verbose=verbose)
+                if max_size:
+                    result = processor.process_image_size_constrained(
+                        img_path, output_file, max_size, verbose=verbose
+                    )
+                else:
+                    result = processor.process_image(img_path, output_file, verbose=verbose)
                 success_count += 1
 
                 if verbose:
-                    click.echo(
-                        f"\n  {img_path.name} -> {output_file.name}\n"
-                        f"    Orientation: {result['orientation']}\n"
-                        f"    Size: {result['final_size'][0]}x{result['final_size'][1]}px\n"
-                        f"    Quality: {result['quality']}\n"
-                        f"    File size: {result['file_size_mb']:.2f} MB"
-                    )
+                    if max_size:
+                        click.echo(
+                            f"\n  {img_path.name} -> {output_file.name}\n"
+                            f"    Original: {result['original_size'][0]}x{result['original_size'][1]}px\n"
+                            f"    Final: {result['final_size'][0]}x{result['final_size'][1]}px\n"
+                            f"    Quality: {result['quality']}\n"
+                            f"    File size: {result['file_size_mb']:.2f} MB"
+                        )
+                    else:
+                        click.echo(
+                            f"\n  {img_path.name} -> {output_file.name}\n"
+                            f"    Orientation: {result['orientation']}\n"
+                            f"    Size: {result['final_size'][0]}x{result['final_size'][1]}px\n"
+                            f"    Quality: {result['quality']}\n"
+                            f"    File size: {result['file_size_mb']:.2f} MB"
+                        )
 
             except Exception as e:
                 error_count += 1
