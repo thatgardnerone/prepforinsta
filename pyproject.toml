@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "prepforinsta"
-version = "0.1.1"
+version = "0.1.2"
 description = "A CLI tool to prepare images for Instagram publishing"
 authors = ["Jamie Gardner <jamie@tgo.dev>"]
 readme = "README.md"
