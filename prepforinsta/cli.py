@@ -59,6 +59,11 @@ def find_images(input_path: Path) -> List[Path]:
     help='Target max file size in MB. Enables size-constrained mode (no cropping, preserves aspect ratio).'
 )
 @click.option(
+    '--force', '-f',
+    is_flag=True,
+    help='Overwrite existing output files (skipped by default).'
+)
+@click.option(
     '--dry-run',
     is_flag=True,
     help='Show what would be processed without actually processing.'
@@ -69,7 +74,7 @@ def find_images(input_path: Path) -> List[Path]:
     is_flag=True,
     help='Show detailed processing information.'
 )
-def main(input_path: str, output_path: str, quality: int, no_sharpen: bool, keep_exif: bool, max_size: float, dry_run: bool, verbose: bool):
+def main(input_path: str, output_path: str, quality: int, no_sharpen: bool, keep_exif: bool, max_size: float, force: bool, dry_run: bool, verbose: bool):
     """
     Prepare images for Instagram publishing.
 
@@ -121,6 +126,7 @@ def main(input_path: str, output_path: str, quality: int, no_sharpen: bool, keep
     # Process images
     processor = ImageProcessor(start_quality=quality, no_sharpen=no_sharpen, keep_exif=keep_exif)
     success_count = 0
+    skipped_count = 0
     error_count = 0
 
     with click.progressbar(
@@ -131,6 +137,13 @@ def main(input_path: str, output_path: str, quality: int, no_sharpen: bool, keep
     ) as progress_images:
         for img_path in progress_images:
             output_file = output_path / f"{img_path.stem}.jpg"
+
+            # Skip if output already exists (unless --force)
+            if output_file.exists() and not force:
+                skipped_count += 1
+                if verbose:
+                    click.echo(f"\n  Skipping {img_path.name} (already exists)")
+                continue
 
             try:
                 if max_size:
@@ -169,6 +182,8 @@ def main(input_path: str, output_path: str, quality: int, no_sharpen: bool, keep
     # Summary
     click.echo(f"\n{click.style('Done!', fg='green', bold=True)}")
     click.echo(f"Successfully processed: {success_count}")
+    if skipped_count > 0:
+        click.echo(f"Skipped (already exist): {skipped_count}")
     if error_count > 0:
         click.echo(click.style(f"Errors: {error_count}", fg='red'))
     click.echo(f"Output location: {output_path}")

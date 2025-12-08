@@ -63,6 +63,7 @@ Options:
                           default for privacy)
   --max-size FLOAT        Target max file size in MB. Enables size-constrained
                           mode (no cropping, preserves aspect ratio)
+  -f, --force             Overwrite existing output files (skipped by default)
   --dry-run               Show what would be processed without processing
   -v, --verbose           Show detailed processing information
   --help                  Show this message and exit
